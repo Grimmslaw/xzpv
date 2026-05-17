@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+#
+# Archive a target directory/file, displaying a visual progress bar.
 
 set -euo pipefail
 
-#--------------#
-# Global State #
-#--------------#
+#--------------------#
+# /* Global State */ #
+#--------------------#
 
 programname="$(basename "$0")"
 
@@ -14,10 +16,30 @@ DEST=""
 DELETE=0
 TARGET=""
 
-#-------------------#
-# Utility Functions #
-#-------------------#
+#-------------------------#
+# /* Utility Functions */ #
+#-------------------------#
 
+##########################################
+# Print a message (or messages) to stderr.
+# Globals:
+#   None
+# Arguments:
+#   Any number of messages
+# Outputs:
+#   Writes the message(s) to stderr
+##########################################
+err() {
+    echo "fatal: $*" >&2
+}
+
+#########################################################################
+# Print to stdout if (and only if) the script is running in verbose mode.
+# Globals:
+#   VERBOSE
+# Arguments:
+#   The message to print
+#########################################################################
 vprint() {
     if [[ "$#" -gt 0 ]]; then
         local -r message="$1"
@@ -27,14 +49,32 @@ vprint() {
     fi
 }
 
+###############################################################################################
+# Check whether the current device/environment calls GNU getopt(1) for `getopt`.
+# Globals:
+#   None
+# Arguments:
+#   None
+# Outputs:
+#   Nothing if the `getopt` is getopt(1), otherwise writes an error message and non-zero exits.
+###############################################################################################
 check_getopt() {
     getopt -T >/dev/null 2>&1
     if [ $? -ne 4 ]; then
-        echo "To run this script, getopt(1) must be installed and earlier in the path that getopt(3)."
+        err "To run this script, getopt(1) must be installed and earlier in the path than getopt(3)."
         exit 1
     fi
 }
 
+#######################################################################################
+# Write the usage (help) text and exits the script.
+# Globals:
+#   None
+# Arguments:
+#   "0" for a successful exit, or anything else (including nothing) for a non-zero exit
+# Outputs:
+#   The usage text
+#######################################################################################
 usage_exit() {
     local status=1
     if [[ $# -gt 0 ]] && [[ "$1" = "0" ]]; then
@@ -45,10 +85,17 @@ usage_exit() {
     exit "$status"
 }
 
-#-------------------#
-# Primary Functions #
-#-------------------#
+#-------------------------#
+# /* Primary Functions */ #
+#-------------------------#
 
+######################################################
+# Write the usage/help text for this script to stdout.
+# Globals:
+#   None
+# Arguments:
+#   None
+######################################################
 usage() {
     cat <<EOF
 Usage: $programname [options] <target>
@@ -61,15 +108,41 @@ Options:
 EOF
 }
 
+#########################################################################################
+# Archive (using `xz`) the target, writing an (in-place) updating progress bar to stdout.
+# Globals:
+#   COMP_LEVEL
+#   TARGET
+#   ARCHIVE
+# Arguments:
+#   None
+# Outputs:
+#   Writes an in-place updating progress bar to stdout
+#   Writes an error to stderr if the archiving fails
+# Returns:
+#   A non-zero exit if the archiving fails
+#########################################################################################
 archive() {
     local -r compression_level=$([ "$COMP_LEVEL" -gt 0 ] && echo "-$COMP_LEVEL" || echo "")
     tar cf - "$TARGET" | pv -s $(($(du -sk "$TARGET" | awk '{print $1}') * 1024)) | xz "$compression_level" >"$ARCHIVE"
     if [ -f "$ARCHIVE" ]; then
-        echo "Failed to create archive $ARCHIVE"
+        err "Failed to create archive $ARCHIVE"
         exit 1
     fi
 }
 
+#####################################################################################################
+# Delete the original target file/directory if in "delete" mode.
+# Globals:
+#   DELETE
+#   TARGET
+# Arguments:
+#   None
+# Outputs:
+#   Nothing
+# Returns:
+#   0 if the target was successfully delete or the script is not in "delete" mode, non-zero on error.
+#####################################################################################################
 cleanup() {
     if [[ $DELETE -eq 1 ]]; then
         rm -rf "$TARGET"
