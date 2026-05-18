@@ -101,6 +101,7 @@ usage() {
 Usage: $programname [options] <target>
 
 Options:
+  -h, --help                            Display this usage text and exit.
   -c <level>, --compression <level>     Level of compression (see \`man xz\`) to be used to archive the files.
   -d <dest>, --destination <dest>       Path (or name relative to cwd) of the archive file.
   -v, --verbose                         Verbose output.

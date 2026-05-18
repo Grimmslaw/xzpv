@@ -1,25 +1,58 @@
 #!/usr/bin/env bash
+#
+# Install (or uninstall) the xz-prog.sh command on this machine.
 
-MODE=0
+programname="$(basename "$0")"
+
+MODE=
 FORCE=0
 
-while getopts ":hfu" opt; do
+usage_exit() {
+    local status=1
+    if [[ $# -gt 0 ]] && [[ "$1" = "0" ]]; then
+        status=0
+    fi
+
+    usage
+    exit "$status"
+}
+
+usage() {
+    cat <<EOF
+Usage: $programname [-hf] <mode>
+
+Options:
+  -h    Display this usage text and exit.
+  -f    Use "force" with any file deletions. (If not marked, all \`rm\` calls will use the \`-i\` flag.)
+EOF
+}
+
+while getopts ":hf" opt; do
     case $opt in
         h)
-            # TODO: help text?
+            usage_exit 0
             ;;
         f)
             FORCE=1
             ;;
-        u)
-            MODE=1
-            ;;
         *)
             echo "Invalid option: -$OPTARG" >&2
-            exit 1
+            usage_exit 1
             ;;
     esac
 done
+
+find_installed_for() {
+    grep "scope = " "$VAR_DEST/config.toml" | cut -d'=' -f2 | xargs
+}
+
+# TODO: use config.toml to determine if `sudo` was needed
+shift $((OPTIND - 1))
+if [[ $# -gt 0 ]] && [[ "${1,,}" == "install" || "${1,,}" == "uninstall" ]]; then
+    MODE="${1,,}"
+else
+    MODE="uninstall"
+fi
 
 # TODO: naive--only tested on my machine
 
@@ -28,12 +61,28 @@ SCRIPT="$COMMAND.sh"
 MANPAGE="$COMMAND.1"
 declare -a STATUSES
 
-if [[ $EUID -ne 0 ]]; then
-    LOCAL_HOME="$HOME/.local"
-    INSTALLED_FOR="USER"
+#if [[ $EUID -ne 0 ]]; then
+#    LOCAL_HOME="$HOME/.local"
+#    INSTALLED_FOR="USER"
+#else
+#    LOCAL_HOME="/usr/local"
+#    INSTALLED_FOR="ROOT"
+#fi
+if [[ $MODE = "install" ]]; then
+    if [[ $EUID -ne 0 ]]; then
+        LOCAL_HOME="$HOME/.local"
+        INSTALLED_FOR="USER"
+    else
+        LOCAL_HOME="/usr/local"
+        INSTALLED_FOR="ROOT"
+    fi
 else
-    LOCAL_HOME="/usr/local"
-    INSTALLED_FOR="ROOT"
+    INSTALLED_FOR=$(find_installed_for)
+    if [[ $INSTALLED_FOR = "USER" ]]; then
+        LOCAL_HOME="$HOME/.local"
+    else
+        LOCAL_HOME="/usr/local"
+    fi
 fi
 
 OPT_DEST="$LOCAL_HOME/opt"              # e.g., /usr/local/opt
@@ -59,13 +108,13 @@ mandb_exists() {
 
 script_action() {
     case $MODE in
-        0)
+        "install")
             mkdir -p "$OPT_BIN"
             cp "$SCRIPT" "$OPT_SCRIPT"
             chmod +x "$OPT_SCRIPT"
             ln -s "$OPT_SCRIPT" "$BIN_SCRIPT"
             ;;
-        1)
+        "uninstall")
             if [[ $FORCE -eq 0 ]]; then
                 rm -i "$BIN_SCRIPT"
                 rm -ri "$OPT_BIN"
@@ -79,7 +128,7 @@ script_action() {
 
 manpage_action() {
     case $MODE in
-        0)
+        "install")
             mkdir -p "$OPT_MAN"
             cp "$MANPAGE" "$OPT_MANPAGE"
             ln -s "$OPT_MANPAGE" "$MAN_MANPAGE"
@@ -89,7 +138,7 @@ manpage_action() {
                 STATUSES+=("mandb command not detected. Installed manpage may not be immediately visible.")
             fi
             ;;
-        1)
+        "uninstall")
             if [[ $FORCE -eq 0 ]]; then
                 rm -i "$MANPAGE"
                 rm -ri "$OPT_MAN"
@@ -103,10 +152,10 @@ manpage_action() {
 
 environment_action() {
     case $MODE in
-        0)
+        "install")
             echo "scope = $INSTALLED_FOR" >> "$VAR_DEST/config.toml"
             ;;
-        1)
+        "uninstall")
             if [[ $FORCE -eq 0 ]]; then
                 rm -i "$VAR_DEST/config.toml"
             else
