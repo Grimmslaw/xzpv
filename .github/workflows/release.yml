@@ -1,0 +1,72 @@
+name: Release Toolchain Pipelin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc debhelper devscripts build-essential
+
+      - name: Compile and Test Binary
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Build Debian (.deb) Package
+        run: |
+          # Copy debian metadata directory from our packaging folder to the root
+          cp -r packaging/debian ./debian
+          
+          # Build the package safely without signing keys for distribution upload
+          dpkg-buildpackage -us -uc -b
+          
+          # Move the compiled .deb file into our workspace folder
+          mv ../xzpv_*.deb ./xzpv.deb
+
+      - name: Compute Archive Hashes for Homebrew Forumla
+        id: brew_hash
+        run: |
+          # Compress clean source snapshot into a release tarball
+          tar --exclude='build' --exclude='.git' -czf xzpv-${{ github.ref_name }}.tar.gz .
+          
+          # Calculate checksum hash
+          HASH=$(shasum -a 256 xzpv-${{ github.ref_name }}.tar.gz | awk '{print $1}')
+          echo "SHA256=$HASH" >> $GITHUB_ENV
+          echo "Calculated Tarball Hash: $HASH
+
+      - name: Create Github Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            xzpv.deb
+            xzpv-${{ github.ref_name }}.tar.gz
+          body: |
+            ## xzpv ${{ github.ref_name }} Release
+            
+            ### Installation Instructions
+            
+            #### Linux (APT Package)
+            Download the `xzpv.deb` asset attached below and run:
+            ```bash
+            sudo apt install ./xzpv.deb
+            ```
+            
+            #### macOS (Homebrew Formula Update info)
+            To update your Homebrew formula repository, use these parameters:
+            - **URL**: `https://github.com{{ github.repository }}/archive/refs/tags/${{ github.ref_name }}`
+            - **SHA-256 Checksum**: `${{ env.SHA256 }}`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
