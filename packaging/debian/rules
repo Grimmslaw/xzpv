@@ -1,0 +1,5 @@
+#!/usr/bin/make -f
+
+# Force the system to use Debian's automated CMake build engine
+%:
+	dh $@

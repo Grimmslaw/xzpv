@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+# Run our C binary's installer hook safely under the root space
+if [ "$1" = "configure" ]; then
+    xzpv --install
+fi
+
+exit 0
