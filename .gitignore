@@ -1,5 +1,1 @@
 .idea/
-todo.txt
-*.patch
-build/
-cmake-build-debug/*

@@ -1,0 +1,5 @@
+* Finish man page
+* Testing
+* Installation scripts
+* Package?
+
