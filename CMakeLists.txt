@@ -29,3 +29,23 @@ include(GNUInstallDirs)
 install(TARGETS xzpv
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# ===================================
+# Testing Suite Configuration (CTest)
+# ===================================
+enable_testing()
+add_executable(test_suite
+        tests/test_suite.c
+        src/config.c
+        src/context.c
+        src/files.c
+        src/operations.c
+        src/output.c
+)
+
+target_include_directories(test_suite PUBLIC include)
+if (WIN32)
+    target_link_libraries(test_suite PRIVATE shell32)
+endif ()
+
+add_test(NAME CoreUnitTestSuite COMMAND test_suite)
