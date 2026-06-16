@@ -1,0 +1,31 @@
+name: Branch Topology Enforcement
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-topology:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce Main Merging Logic
+        if: github.base_ref == 'main' && github.head_ref != 'release'
+        run: |
+          echo "ERROR: Topology Violation!"
+          echo "The 'main' branch ONLY accepts merges originating from 'release'."
+          echo "Your PR originates from '${{ github.head_ref }}'."
+          exit 1
+
+      - name: Enforce Release Merging Logic
+        if: github.base_ref == 'release' && github.head_ref != 'working'
+        run: |
+          echo "ERROR: Topology Violation!"
+          echo "The 'release' branch ONLY accepts merges originating from 'working'."
+          echo "Your PR originates from '${{ github.head_ref }}'."
+          exit 1
+
+      - name: Success
+        run: echo "Branch topology matches specification. PR validation passed.
