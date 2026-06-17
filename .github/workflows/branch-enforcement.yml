@@ -28,4 +28,4 @@ jobs:
           exit 1
 
       - name: Success
-        run: echo "Branch topology matches specification. PR validation passed.
+        run: echo "Branch topology matches specification. PR validation passed."
