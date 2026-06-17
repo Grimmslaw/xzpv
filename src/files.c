@@ -1,4 +1,5 @@
-#include <ftw.h>
+#define _GNU_SOURCE
+
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
