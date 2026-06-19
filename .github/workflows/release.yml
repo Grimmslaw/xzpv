@@ -41,7 +41,7 @@ jobs:
         id: brew_hash
         run: |
           # Compress clean source snapshot into a release tarball
-          tar --exclude='build' --exclude='.git' -czf xzpv-${{ github.ref_name }}.tar.gz .
+          tar --exclude='build' --exclude='.git' --exclude='xzpv-${{ github.ref_name }}.tar.gz' -czf xzpv-${{ github.ref_name }}.tar.gz .
           
           # Calculate checksum hash
           HASH=$(shasum -a 256 xzpv-${{ github.ref_name }}.tar.gz | awk '{print $1}')
