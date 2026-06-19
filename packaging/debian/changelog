@@ -1,5 +1,5 @@
 xzpv (1.0.0) unstable; urgency=low
 
-    * Initial release of the xzpv package wrapper.
+  * Initial release of the xzpv package wrapper.
 
-    -- Wes Rickey <d.wrickey@gmail.com> Sat, 13 Jun 2026 21:40:00 -0500
+ -- Wes Rickey <d.wrickey@gmail.com> Sat, 13 Jun 2026 21:40:00 -0500
