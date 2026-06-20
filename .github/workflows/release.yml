@@ -37,7 +37,7 @@ jobs:
           # Move the compiled .deb file into our workspace folder
           mv ../xzpv_*.deb ./xzpv.deb
 
-      - name: Compute Archive Hashes for Homebrew Forumla
+      - name: Compute Archive Hashes for Homebrew Formula
         id: brew_hash
         run: |
           # Compress clean source snapshot into a release tarball (in /tmp to avoid directory race conditions with tar)
@@ -49,7 +49,7 @@ jobs:
           # Calculate checksum hash
           HASH=$(shasum -a 256 xzpv-${{ github.ref_name }}.tar.gz | awk '{print $1}')
           echo "SHA256=$HASH" >> $GITHUB_ENV
-          echo "Calculated Tarball Hash: $HASH
+          echo "Calculated Tarball Hash: $HASH"
 
       - name: Create Github Release and Upload Assets
         uses: softprops/action-gh-release@v2
