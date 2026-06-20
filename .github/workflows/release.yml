@@ -40,8 +40,11 @@ jobs:
       - name: Compute Archive Hashes for Homebrew Forumla
         id: brew_hash
         run: |
-          # Compress clean source snapshot into a release tarball
-          tar --exclude='build' --exclude='.git' --exclude='xzpv-${{ github.ref_name }}.tar.gz' -czf xzpv-${{ github.ref_name }}.tar.gz .
+          # Compress clean source snapshot into a release tarball (in /tmp to avoid directory race conditions with tar)
+          tar --exclude='build' --exclude='.git' -czf /tmp/xzpv-${{ github.ref_name }}.tar.gz .
+          
+          # Move it safely back into the workspace directory now that tar has closed it
+          mv /tmp/xzpv-${{ github.ref_name }}.tar.gz ./xzpv-${{ github.ref_name }}.tar.gz
           
           # Calculate checksum hash
           HASH=$(shasum -a 256 xzpv-${{ github.ref_name }}.tar.gz | awk '{print $1}')
